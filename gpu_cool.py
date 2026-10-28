@@ -115,14 +115,8 @@ class App:
         self.overlay.configure(bg="#000000")
         self.small = tk.Label(self.overlay, text="", font=("Sans", 11, "bold"), bg="#000000", fg=FG, padx=8, pady=3)
         self.small.pack()
+        self.overlay.bind("<Map>", self.click_through)
         self.toggle_overlay()
-        self.overlay.update_idletasks()
-        # empty input shape: clicks go through the small display to whatever is under it
-        x11, xext = ctypes.CDLL("libX11.so.6"), ctypes.CDLL("libXext.so.6")
-        x11.XOpenDisplay.restype = ctypes.c_void_p
-        dpy = ctypes.c_void_p(x11.XOpenDisplay(None))
-        xext.XShapeCombineRectangles(dpy, ctypes.c_ulong(int(self.overlay.wm_frame(), 16)), 2, 0, 0, None, 0, 0, 0)
-        x11.XCloseDisplay(dpy)
 
         # tray icon next to the clock; menu callbacks are deferred to Tk so quit can destroy the window safely
         self.tray = AyatanaAppIndicator3.Indicator.new("gpu-cool", str(ICON),
@@ -183,6 +177,18 @@ class App:
         CONFIG.parent.mkdir(parents=True, exist_ok=True)
         CONFIG.write_text(json.dumps({"mode": self.mode.get(), "target": self.target.get(),
                                       "target_pct": self.target_pct.get(), "overlay": self.overlay_on.get()}))
+
+    def click_through(self, _event):
+        # empty input shape on Tk's wrapper (the parent X window of the overlay): clicks go through to whatever is under it
+        x11, xext = ctypes.CDLL("libX11.so.6"), ctypes.CDLL("libXext.so.6")
+        x11.XOpenDisplay.restype = ctypes.c_void_p
+        dpy = ctypes.c_void_p(x11.XOpenDisplay(None))
+        root, parent, children, n = ctypes.c_ulong(), ctypes.c_ulong(), ctypes.c_void_p(), ctypes.c_uint()
+        x11.XQueryTree(dpy, ctypes.c_ulong(self.overlay.winfo_id()), ctypes.byref(root), ctypes.byref(parent),
+                       ctypes.byref(children), ctypes.byref(n))
+        x11.XFree(children)
+        xext.XShapeCombineRectangles(dpy, parent, 2, 0, 0, None, 0, 0, 0)
+        x11.XCloseDisplay(dpy)
 
     def toggle_overlay(self):
         if self.overlay_on.get():
