@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GPU Cool
+Comment=Hold the GPU at a target temperature
+Exec=python3 GPU_COOL_DIR/gpu_cool.py
+Icon=GPU_COOL_DIR/gpu_cool.svg
+StartupWMClass=Gpucool
+Terminal=false
+Categories=Utility;System;
