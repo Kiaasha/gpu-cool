@@ -2,6 +2,7 @@
 # GPU Cool: holds the NVIDIA GPU near a target temperature by moving its clock cap.
 # Needs a sudoers rule that lets this user run "nvidia-smi -lgc" and "nvidia-smi -rgc" without a password.
 
+import ctypes
 import json
 import math
 import socket
@@ -115,6 +116,13 @@ class App:
         self.small = tk.Label(self.overlay, text="", font=("Sans", 11, "bold"), bg="#000000", fg=FG, padx=8, pady=3)
         self.small.pack()
         self.toggle_overlay()
+        self.overlay.update_idletasks()
+        # empty input shape: clicks go through the small display to whatever is under it
+        x11, xext = ctypes.CDLL("libX11.so.6"), ctypes.CDLL("libXext.so.6")
+        x11.XOpenDisplay.restype = ctypes.c_void_p
+        dpy = ctypes.c_void_p(x11.XOpenDisplay(None))
+        xext.XShapeCombineRectangles(dpy, ctypes.c_ulong(int(self.overlay.wm_frame(), 16)), 2, 0, 0, None, 0, 0, 0)
+        x11.XCloseDisplay(dpy)
 
         # tray icon next to the clock; menu callbacks are deferred to Tk so quit can destroy the window safely
         self.tray = AyatanaAppIndicator3.Indicator.new("gpu-cool", str(ICON),
