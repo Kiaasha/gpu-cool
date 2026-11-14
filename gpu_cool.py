@@ -48,7 +48,7 @@ def set_cap(clk):
 class App:
     def __init__(self, root):
         self.root = root
-        self.max_clk, self.power_limit = (int(v) for v in query("clocks.max.gr,power.default_limit"))
+        self.max_clk, self.power_limit = (int(v) for v in query("clocks.max.gr,power.max_limit"))
         self.running = False
         self.cap = None
         self.tick = 0
@@ -154,9 +154,10 @@ class App:
         return (self.target, 60, 85, "°C") if self.mode.get() == "temp" else (self.target_pct, 50, 100, "%")
 
     def drag(self, e):
-        var, lo, hi, _ = self.slider_range()
+        var, lo, hi, unit = self.slider_range()
         frac = min(1, max(0, (e.x - 12) / (470 - 24)))
-        var.set(lo + round(frac * (hi - lo) / 5) * 5)
+        step = 1 if unit == "°C" else 5
+        var.set(lo + round(frac * (hi - lo) / step) * step)
         self.draw_slider()
 
     def draw_slider(self):
